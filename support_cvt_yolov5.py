@@ -30,3 +30,4 @@ def img_2_video (filepath, video_name, fps):
 
 if __name__ == "__main__":
     img_2_video("/Users/dkim/Downloads/exp3/*.PNG", "temora_epoch15_batch2.mp4", 30)
+
