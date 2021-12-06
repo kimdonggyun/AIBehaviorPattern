@@ -29,8 +29,9 @@ def img_2_video (filepath, video_name, fps):
 
 def remove_empty_frame(dirpath):
     """
-    
+    remove images and labels which doesn't have any label (i.e., 0 byte of lable file)
     """
+    
 
 
 
