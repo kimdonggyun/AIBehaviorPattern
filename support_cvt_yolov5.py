@@ -27,9 +27,19 @@ def img_2_video (filepath, video_name, fps):
     
     return out
 
+def remove_empty_frame(dirpath):
+    """
+    
+    """
+
+
 
 if __name__ == "__main__":
-    filepath = input("type full filepath and *.img:")
-    savename = input("type video name:")
-    fps = int(input("type fps:"))
-    img_2_video(filepath, savename, fps)
+    run = int(input("which function?(0: img_2_video, 1: remove_empty_frame):"))
+    if run == 0:
+        filepath = input("type full filepath and *.img:")
+        savename = input("type video name:")
+        fps = int(input("type fps:"))
+        img_2_video(filepath, savename, fps)
+    elif run == 1:
+        dirpath = input("type full dirpath")
