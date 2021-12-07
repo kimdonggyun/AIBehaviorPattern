@@ -3,10 +3,17 @@
 contact: dong-gyun.kim@awi.de
 What is modified:
 1. line_thickness 3 to 1 (thinner line)
+2. frame path, coordination and label file will be created
+"""
+# yolov5 modification
+"""
+contact: dong-gyun.kim@awi.de
+What is modified:
+1. line_thickness 3 to 1 (thinner line)
 2.
 """
 
-# YOLOv5 🚀 by Ultralytics, GPL-3.0 license
+# YOLOv5 Ã°Å¸Å¡â‚¬ by Ultralytics, GPL-3.0 license
 """
 Run inference on images, videos, directories, streams, etc.
 
@@ -87,6 +94,10 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
     model = DetectMultiBackend(weights, device=device, dnn=dnn)
     stride, names, pt, jit, onnx, engine = model.stride, model.names, model.pt, model.jit, model.onnx, model.engine
     imgsz = check_img_size(imgsz, s=stride)  # check image size
+    """
+    major change
+    """
+    coord_info = [] # empty list for coordination added
 
     # Half
     half &= (pt or engine) and device.type != 'cpu'  # half precision only supported by PyTorch on CUDA
@@ -132,6 +143,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         # pred = utils.general.apply_classifier(pred, classifier_model, im, im0s)
 
         # Process predictions
+
         for i, det in enumerate(pred):  # per image
             seen += 1
             if webcam:  # batch_size >= 1
@@ -168,6 +180,10 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         c = int(cls)  # integer class
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label, color=colors(c, True))
+                        """
+                        major modification
+                        """
+                        coord_info.append([p, xyxy, label])
                         if save_crop:
                             save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
 
@@ -207,6 +223,11 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
     if update:
         strip_optimizer(weights)  # update model (to fix SourceChangeWarning)
+    
+    # save coordinate information
+    with open( os.path.join(save_dir, "coordination.txt"), "w") as f:
+        for item in coord_info:
+            f.write("%s\n" % item)
 
 
 def parse_opt():
