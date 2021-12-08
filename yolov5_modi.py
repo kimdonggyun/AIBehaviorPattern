@@ -13,7 +13,7 @@ What is modified:
 2.
 """
 
-# YOLOv5 Ã°Å¸Å¡â‚¬ by Ultralytics, GPL-3.0 license
+# YOLOv5 GPL-3.0 license
 """
 Run inference on images, videos, directories, streams, etc.
 
