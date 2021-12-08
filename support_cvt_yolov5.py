@@ -48,9 +48,16 @@ def remove_empty_frame(dirpath):
         os.remove(z) # remove lables
         os.remove(z.replace(".txt", ".PNG")) # remove images
 
+def yolo_2_dataframe():
+    """
+    convert txt file from yolo prediction and convert it to dataframe
+    """
+    
+
+
 
 if __name__ == "__main__":
-    run = int(input("which function?(0: img_2_video, 1: remove_empty_frame):"))
+    run = int(input("which function?(0: img_2_video, 1: remove_empty_frame):, 2: yolo_2_dataframe"))
     if run == 0:
         filepath = input("type full filepath and *.container_name: ")
         savename = input("type video name (including video container): ")
@@ -59,3 +66,7 @@ if __name__ == "__main__":
     elif run == 1:
         dirpath = input("type full dirpath: ")
         remove_empty_frame(dirpath)
+    elif run == 2:
+        filepath = input("type fill filepaht: ")
+        yolo_2_dataframe(filepath)
+
