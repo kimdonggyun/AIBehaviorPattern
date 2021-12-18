@@ -6,7 +6,7 @@ filepath = "/Users/dkim/Desktop/basler_camera/recording/sp16_5_L.mp4"
 cap = cv2.VideoCapture(filepath)
 
 # object detection from stable camera
-object_detector = cv2.createBackgroundSubtractorMOG2() # remove the background which does not move at all
+object_detector = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=20) # remove the background which does not move at all
 
 
 # loooing through the frames
@@ -28,7 +28,9 @@ while True:
         # calculater area and remove small elements
         area = cv2.contourArea(cnt)
         if area > 100:
-            cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2) # draw line on "roi" with "all" contours with "green line" with thickness 2
+            #cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2) # draw line on "roi" with "all" contours with "green line" with thickness 2
+            x, y, w, h = cv2.boundingRect(cnt)
+            cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0),  3)
 
     # show windows
     cv2.imshow("Frame", frame)
