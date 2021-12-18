@@ -23,6 +23,6 @@ def obj_size(pixel_area, constant):
     constant = known constanct value (img_size_A * object_A_distance == img_size_B * object_B_distance)
     """
     
-    constant = np.square(pixel_area)*distance
+    constant = np.square(pixel_area)*di
     real_size = pixel_area
     return real_size
