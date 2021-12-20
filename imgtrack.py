@@ -33,7 +33,7 @@ class EuclideanDistTracker:
 
                 if dist < 25:
                     self.center_points[id] = (cx, cy)
-                    print(self.center_points)
+                    #print(self.center_points)
                     objects_bbs_ids.append([x, y, w, h, id])
                     same_object_detected = True
                     break
@@ -70,9 +70,10 @@ object_detector = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=2
 
 # loooing through the frames
 frame_number = 0
-df = pd.DataFrame(columns=["fame", "obj_id", "x", "y", "w", "h" ])
+df = pd.DataFrame(columns=["x", "y", "w", "h", "obj_id", "frame"])
 while True:
     ret, org_frame = cap.read()
+    print(ret)
     # rotate the frame and extract ROI (region of interest)
     if "L.mp4" in filepath:
         frame = cv2.rotate(org_frame, cv2.ROTATE_90_CLOCKWISE)
@@ -105,7 +106,10 @@ while True:
         cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0),  3)
 
         # append data to dataframe
-        df
+        print(frame_number)
+        df_row = box_id.append(frame_number)
+        #print(df_row)
+        df =df.append(pd.Series(df_row),ignore_index=True)
 
         frame_number += 1
 
@@ -113,13 +117,14 @@ while True:
 
     # show windows
     cv2.imshow("Frame", frame)
-    cv2.imshow("Mask", mask)
+    #cv2.imshow("Mask", mask)
     cv2.imshow("ROI", roi)
 
     key = cv2.waitKey(10) # no wait between frames
     if cv2.waitKey(1) & 0xFF == ord('q'): # press "q" to stop streaming
         break
 
+print(df)
 cap.release()
 cv2.destroyAllWindows()
 
