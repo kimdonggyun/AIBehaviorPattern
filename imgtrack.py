@@ -2,6 +2,7 @@
 import cv2
 import math
 import pandas as pd
+import numpy as np
 
 
 ###################################
@@ -61,7 +62,7 @@ class EuclideanDistTracker:
 tracker = EuclideanDistTracker()
 
 # reading in video file
-filepath = "/Users/dkim/Desktop/basler_camera/recording/sp16_5_L.mp4"
+filepath = "/Users/dkim/Desktop/basler_camera/recording/sp16_5_R.mp4"
 cap = cv2.VideoCapture(filepath)
 
 # object detection from stable camera
@@ -73,7 +74,12 @@ frame_number = 0
 df = pd.DataFrame(columns=["x", "y", "w", "h", "obj_id", "frame"])
 while True:
     ret, org_frame = cap.read()
-    print(ret)
+
+    if ret == False:
+        df_filepath = filepath.replace(".mp4", ".txt")
+        df.to_csv(df_filepath, sep= "\t") # save data as txt file
+        print("file saved at %s" %(df_filepath ,))
+        break
     # rotate the frame and extract ROI (region of interest)
     if "L.mp4" in filepath:
         frame = cv2.rotate(org_frame, cv2.ROTATE_90_CLOCKWISE)
@@ -97,35 +103,42 @@ while True:
             x, y, w, h = cv2.boundingRect(cnt)
             cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0),  3)
             detections.append([x, y, w, h])
-
+    
+    
     # 2. object tracking
     boxes_ids = tracker.update(detections)
-    for box_id in boxes_ids:
-        x, y, w, h, id = box_id
-        cv2.putText(roi, str(id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0), 2)
-        cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0),  3)
-
-        # append data to dataframe
-        print(frame_number)
-        df_row = box_id.append(frame_number)
-        #print(df_row)
-        df =df.append(pd.Series(df_row),ignore_index=True)
-
+    if len(boxes_ids) == 0: # if there are no objects detected
+        df.loc[len(df)] = [np.nan, np.nan, np.nan, np.nan, np.nan, int(frame_number)]
         frame_number += 1
+    else: # if there are objects detected
+        for box_id in boxes_ids:
+            x, y, w, h, id = box_id
+            cv2.putText(roi, str(id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0), 2)
+            cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0),  3)
+
+            # append data to dataframe
+            df_row = [*box_id, frame_number]
+            df.loc[len(df)] = df_row
+
+            frame_number += 1
 
 
-
+    """
     # show windows
     cv2.imshow("Frame", frame)
     #cv2.imshow("Mask", mask)
     cv2.imshow("ROI", roi)
 
+
     key = cv2.waitKey(10) # no wait between frames
     if cv2.waitKey(1) & 0xFF == ord('q'): # press "q" to stop streaming
+        print(df)
         break
 
-print(df)
+
+    """
 cap.release()
-cv2.destroyAllWindows()
+#cv2.destroyAllWindows()
+
 
 
