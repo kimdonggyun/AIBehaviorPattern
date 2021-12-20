@@ -71,7 +71,11 @@ object_detector = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=2
 
 # loooing through the frames
 frame_number = 0
-df = pd.DataFrame(columns=["x", "y", "w", "h", "obj_id", "frame"])
+if "L.mp4" in filepath:
+    df = pd.DataFrame(columns=["x", "y", "w", "h", "obj_id", "frame"])
+elif "R.mp4" in filepath:
+    df = pd.DataFrame(columns=["z", "y", "w", "h", "obj_id", "frame"])
+
 while True:
     ret, org_frame = cap.read()
 
