@@ -19,7 +19,6 @@ def property(roi, cnt):
 
     # calculate gray mean value within contour
     mask_array = np.zeros(roi.shape,  np.uint8) # create 0 array having same shape of image
-    cv2.drawContours(mask_array, cnt, 255, -1) # within the contour area convert the value as 255 (white)
     masked_img = np.ma.masked_array(roi, mask= (mask_array != 255)) # careful!! 1 is True, 0 is False. in this mask_array, background is False and object is True
     gray_mean = np.mean(masked_img) # unmasked(False=background) will be ignored and masked(Ture=object) will only be considered
 
@@ -42,6 +41,7 @@ class EuclideanDistTracker:
         # Get center point of new object
         for rect in objects_rect:
             x, y, w, h, roi, cnt = rect
+            properties = property(roi, cnt)
             cx = (x + x + w) // 2
             cy = (y + y + h) // 2
 
@@ -67,7 +67,7 @@ class EuclideanDistTracker:
         # Clean the dictionary by center points to remove IDS not used anymore
         new_center_points = {}
         for obj_bb_id in objects_bbs_ids:
-            _, _, _, _, _, object_id = obj_bb_id
+            _, _, _, _, _, _, _, _, object_id = obj_bb_id
             center = self.center_points[object_id]
             new_center_points[object_id] = center
 
@@ -106,10 +106,10 @@ def tracking(filepath):
         # rotate the frame and extract ROI (region of interest)
         if "L.mp4" in filepath:
             frame = cv2.rotate(org_frame, cv2.ROTATE_90_CLOCKWISE)
-            roi = frame[300:1200 , 0:900]
+            roi = frame[360:1200 , 0:900]
         elif "R.mp4" in filepath:
             frame = cv2.rotate(org_frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
-            roi = frame[300:1200 , 0:900]
+            roi = frame[360:1200 , 0:900]
 
         # 1. object detection
         # apply mask 
@@ -132,7 +132,7 @@ def tracking(filepath):
         # 2. object tracking
         boxes_ids = tracker.update(detections)
         if len(boxes_ids) == 0: # if there are no objects detected
-            df.loc[len(df)] = [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, int(frame_number)] #########
+            df.loc[len(df)] = [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, int(frame_number)] #########
             frame_number += 1
         else: # if there are objects detected
             for box_id in boxes_ids:
@@ -164,11 +164,11 @@ def tracking(filepath):
 
 
 if __name__ == "__main__":
-    #filelist = ["sp2_1_L.mp4", "sp2_1_R.mp4", "sp3_2_L.mp4", "sp3_2_R.mp4", "sp4_3_L.mp4", "sp4_3_R.mp4", "sp5_4_L.mp4", "sp5_4_R.mp4",
-    #            "sp6_5_L.mp4", "sp6_5_R.mp4", "sp7_1_L.mp4", "sp7_1_R.mp4", "sp8_2_L.mp4", "sp8_2_R.mp4", "sp9_3_L.mp4", "sp9_3_R.mp4",
-    #            "sp10_4_L.mp4", "sp10_4_R.mp4", "sp11_5_L.mp4", "sp11_5_R.mp4", "sp12_1_L.mp4", "sp12_1_R.mp4", "sp13_2_L.mp4", "sp13_2_R.mp4",
-    #            "sp14_3_L.mp4", "sp14_3_R.mp4", "sp15_4_L.mp4", "sp15_4_R.mp4", "sp16_5_L.mp4", "sp16_5_R.mp4"]
-    filelist = ["sp2_1_L.mp4", "sp2_1_R.mp4"]
+    filelist = ["sp2_1_L.mp4", "sp2_1_R.mp4", "sp3_2_L.mp4", "sp3_2_R.mp4", "sp4_3_L.mp4", "sp4_3_R.mp4", "sp5_4_L.mp4", "sp5_4_R.mp4",
+                "sp6_5_L.mp4", "sp6_5_R.mp4", "sp7_1_L.mp4", "sp7_1_R.mp4", "sp8_2_L.mp4", "sp8_2_R.mp4", "sp9_3_L.mp4", "sp9_3_R.mp4",
+                "sp10_4_L.mp4", "sp10_4_R.mp4", "sp11_5_L.mp4", "sp11_5_R.mp4", "sp12_1_L.mp4", "sp12_1_R.mp4", "sp13_2_L.mp4", "sp13_2_R.mp4",
+                "sp14_3_L.mp4", "sp14_3_R.mp4", "sp15_4_L.mp4", "sp15_4_R.mp4", "sp16_5_L.mp4", "sp16_5_R.mp4"]
+    #filelist = ["sp2_1_L.mp4", "sp2_1_R.mp4"]
     for f in filelist:
         tracking("/Users/dkim/Desktop/basler_camera/recording/%s" %(f,))
 
