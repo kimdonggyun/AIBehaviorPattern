@@ -45,4 +45,4 @@ def obj_size(pixel_area, constant):
 """
 
 if __name__ == "__main__":
-    #combine_video("/Users/dkim/Desktop/basler_camera/recording/sp16_5_L.txt", "/Users/dkim/Desktop/basler_camera/recording/sp16_5_R.txt")
+    combine_video("/Users/dkim/Desktop/basler_camera/recording/sp16_5_L.txt", "/Users/dkim/Desktop/basler_camera/recording/sp16_5_R.txt")
