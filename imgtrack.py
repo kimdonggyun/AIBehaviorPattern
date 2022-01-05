@@ -77,6 +77,61 @@ class EuclideanDistTracker:
 
 ###################################
 ###################################
+def img_preprocessing(filepath):
+    # rotating videos to the right angle
+    # adjusting videos to easily detect object (inceasing contrast etc)
+    cap = cv2.VideoCapture(filepath)
+    fwidth = int(cap.get(3)) # get width
+    fheight = int(cap.get(4)) # git height
+
+    #  codec and file name
+    fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+    new_filename = filepath.replace(".mp4", "_processed.mp4")
+    out = cv2.VideoWriter(new_filename, fps = 20.0, fourcc = fourcc, frameSize= (fheight, fwidth))
+    print("processing file %s" %(filepath ,))
+    while True:
+        ret, org_frame = cap.read()
+        if ret == False:
+            print("file saved at %s" %(new_filename ,))
+            break
+
+        # rotate the frame and extract ROI (region of interest)
+        if "L.mp4" in filepath:
+            frame = cv2.rotate(org_frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            #roi = frame[10:1200 , 0:900]
+        elif "R.mp4" in filepath:
+            frame = cv2.rotate(org_frame, cv2.ROTATE_90_CLOCKWISE)
+            #roi = frame[10:1200 , 0:900]
+
+        
+        #clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8,8)) # create clahe
+        #frame_clahe = clahe.apply(frame[:,:,0]) # apply clahe
+        #frame_minmax = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX) # normalization
+        # Threshold:
+        #threshValue = 80
+        #_, binaryImage = cv2.threshold(frame_minmax, threshValue, 255, cv2.THRESH_BINARY)
+
+        
+        
+        # show windows
+        #cv2.imshow("Frame", frame)
+        #cv2.imshow("minmax", frame_minmax)
+        #cv2.imshow("clahe", frame_clahe)
+
+        # save video processed
+        out.write(frame)
+        
+        #key = cv2.waitKey(10) # no wait between frames
+        #if cv2.waitKey(1) & 0xFF == ord('q'): # press "q" to stop streaming
+        #    break
+        
+    cap.release()
+    cv2.destroyAllWindows()
+        
+
+
+
+
 def tracking(filepath):
     tracker = EuclideanDistTracker()
 
@@ -105,11 +160,11 @@ def tracking(filepath):
             break
         # rotate the frame and extract ROI (region of interest)
         if "L.mp4" in filepath:
-            frame = cv2.rotate(org_frame, cv2.ROTATE_90_CLOCKWISE)
-            roi = frame[360:1200 , 0:900]
-        elif "R.mp4" in filepath:
             frame = cv2.rotate(org_frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
-            roi = frame[360:1200 , 0:900]
+            roi = frame[10:1200 , 0:900]
+        elif "R.mp4" in filepath:
+            frame = cv2.rotate(org_frame, cv2.ROTATE_90_CLOCKWISE)
+            roi = frame[10:1200 , 0:900]
 
         # 1. object detection
         # apply mask 
@@ -121,7 +176,7 @@ def tracking(filepath):
         for cnt in contours:
             # calculater area and remove small elements
             area = cv2.contourArea(cnt)
-            if area > 100:
+            if area > 5:
                 #cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2) # draw line on "roi" with "all" contours with "green line" with thickness 2
                 x, y, w, h = cv2.boundingRect(cnt)
                 cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0),  3)
@@ -164,13 +219,15 @@ def tracking(filepath):
 
 
 if __name__ == "__main__":
-    filelist = ["sp2_1_L.mp4", "sp2_1_R.mp4", "sp3_2_L.mp4", "sp3_2_R.mp4", "sp4_3_L.mp4", "sp4_3_R.mp4", "sp5_4_L.mp4", "sp5_4_R.mp4",
-                "sp6_5_L.mp4", "sp6_5_R.mp4", "sp7_1_L.mp4", "sp7_1_R.mp4", "sp8_2_L.mp4", "sp8_2_R.mp4", "sp9_3_L.mp4", "sp9_3_R.mp4",
-                "sp10_4_L.mp4", "sp10_4_R.mp4", "sp11_5_L.mp4", "sp11_5_R.mp4", "sp12_1_L.mp4", "sp12_1_R.mp4", "sp13_2_L.mp4", "sp13_2_R.mp4",
-                "sp14_3_L.mp4", "sp14_3_R.mp4", "sp15_4_L.mp4", "sp15_4_R.mp4", "sp16_5_L.mp4", "sp16_5_R.mp4"]
-    #filelist = ["sp2_1_L.mp4", "sp2_1_R.mp4"]
+    #filelist = ["sp2_1_L.mp4", "sp2_1_R.mp4", "sp3_2_L.mp4", "sp3_2_R.mp4", "sp4_3_L.mp4", "sp4_3_R.mp4", "sp5_4_L.mp4", "sp5_4_R.mp4",
+    #            "sp6_5_L.mp4", "sp6_5_R.mp4", "sp7_1_L.mp4", "sp7_1_R.mp4", "sp8_2_L.mp4", "sp8_2_R.mp4", "sp9_3_L.mp4", "sp9_3_R.mp4",
+    #            "sp10_4_L.mp4", "sp10_4_R.mp4", "sp11_5_L.mp4", "sp11_5_R.mp4", "sp12_1_L.mp4", "sp12_1_R.mp4", "sp13_2_L.mp4", "sp13_2_R.mp4",
+    #            "sp14_3_L.mp4", "sp14_3_R.mp4", "sp15_4_L.mp4", "sp15_4_R.mp4", "sp16_5_L.mp4", "sp16_5_R.mp4"]
+    filelist = ["zoo_3_R.mp4", "zoo_3_L.mp4"]
+    
     for f in filelist:
-        tracking("/Users/dkim/Desktop/basler_camera/recording/%s" %(f,))
+        img_preprocessing("/Users/dkim/Desktop/basler_camera/recording/%s" %(f,))
+        #tracking("/Users/dkim/Desktop/basler_camera/recording/%s" %(f,))
 
     
 
