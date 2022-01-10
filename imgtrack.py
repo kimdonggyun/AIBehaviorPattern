@@ -25,6 +25,21 @@ def property(roi, cnt):
 
     return area, solidity, eq, gray_mean
 
+class KalmanFilter:
+    kf = cv2.KalmanFilter(4, 2)
+    kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
+    kf.transitionMatrix = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32)
+
+
+    def predict(self, coordX, coordY):
+        ''' This function estimates the position of the object'''
+        measured = np.array([[np.float32(coordX)], [np.float32(coordY)]])
+        self.kf.correct(measured)
+        predicted = self.kf.predict()
+        x, y = int(predicted[0]), int(predicted[1])
+        return x, y  
+
+
 class EuclideanDistTracker:
     def __init__(self):
         # Store the center positions of the objects
@@ -50,7 +65,7 @@ class EuclideanDistTracker:
             for id, pt in self.center_points.items():
                 dist = math.hypot(cx - pt[0], cy - pt[1])
 
-                if dist < 25:
+                if dist < 50:
                     self.center_points[id] = (cx, cy)
                     #print(self.center_points)
                     properties = property(roi, cnt)
@@ -140,8 +155,19 @@ def tracking(filepath):
     cap = cv2.VideoCapture(filepath)
 
     # object detection from stable camera
-    object_detector = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=20) # remove the background which does not move at all
+    object_detector = cv2.createBackgroundSubtractorMOG2(history=500, varThreshold=20, detectShadows=False) # remove the background which does not move at all
 
+    # adjusting videos to easily detect object (inceasing contrast etc)
+    cap = cv2.VideoCapture(filepath)
+    fwidth = int(cap.get(3)) # get width
+    fheight = int(cap.get(4)) # git height
+
+    #  codec and file name
+    fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
+    new_filename = filepath.replace(".mp4", "_processed.mp4")
+    out = cv2.VideoWriter(new_filename, fps = 20.0, fourcc = fourcc, frameSize= (fheight, fwidth))
+
+    # load Kalmen filter
 
     # loooing through the frames
     frame_number = 0
@@ -165,6 +191,9 @@ def tracking(filepath):
         elif "R.mp4" in filepath:
             frame = cv2.rotate(org_frame, cv2.ROTATE_90_CLOCKWISE)
             roi = frame[10:1200 , 0:900]
+
+        #clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8,8)) # create clahe
+        #frame_clahe = clahe.apply(roi[:,:,0]) # apply clahe
 
         # 1. object detection
         # apply mask 
@@ -192,7 +221,7 @@ def tracking(filepath):
         else: # if there are objects detected
             for box_id in boxes_ids:
                 x, y, w, h, area, solidity, eq, gray_mean, obj_id= box_id
-                cv2.putText(roi, str(id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0), 2)
+                cv2.putText(roi, str(obj_id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0), 2)
                 cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0),  3)
 
                 # append data to dataframe
@@ -206,7 +235,9 @@ def tracking(filepath):
         # show windows
         cv2.imshow("Frame", frame)
         #cv2.imshow("Mask", mask)
-        cv2.imshow("ROI", roi)
+        cv2.imshow("Fram_enhanced", roi)
+
+        out.write(frame)
 
         
         key = cv2.waitKey(10) # no wait between frames
@@ -223,11 +254,11 @@ if __name__ == "__main__":
     #            "sp6_5_L.mp4", "sp6_5_R.mp4", "sp7_1_L.mp4", "sp7_1_R.mp4", "sp8_2_L.mp4", "sp8_2_R.mp4", "sp9_3_L.mp4", "sp9_3_R.mp4",
     #            "sp10_4_L.mp4", "sp10_4_R.mp4", "sp11_5_L.mp4", "sp11_5_R.mp4", "sp12_1_L.mp4", "sp12_1_R.mp4", "sp13_2_L.mp4", "sp13_2_R.mp4",
     #            "sp14_3_L.mp4", "sp14_3_R.mp4", "sp15_4_L.mp4", "sp15_4_R.mp4", "sp16_5_L.mp4", "sp16_5_R.mp4"]
-    filelist = ["zoo_3_R.mp4", "zoo_3_L.mp4"]
+    filelist = ["zoo_3_R.mp4"]
     
     for f in filelist:
-        img_preprocessing("/Users/dkim/Desktop/basler_camera/recording/%s" %(f,))
-        #tracking("/Users/dkim/Desktop/basler_camera/recording/%s" %(f,))
+        #img_preprocessing("/Users/dkim/Desktop/basler_camera/recording/%s" %(f,))
+        tracking("/Users/dkim/Desktop/basler_camera/recording/%s" %(f,))
 
     
 
