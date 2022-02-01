@@ -97,7 +97,7 @@ class EuclideanDistTracker:
 def tracking(filepath):
     # define tracker 
     #tracker = EuclideanDistTracker()
-    tracker = Tracker(50, 5, 3, 100)
+    tracker = Tracker(200, 3,0, 0)
 
     # reading in video file
     filepath = filepath
@@ -119,9 +119,9 @@ def tracking(filepath):
     # loooing through the frames
     frame_number = 0
     if "L.mp4" in filepath:
-        df = pd.DataFrame(columns=["x", "y", "w", "h", "area", "solidity", "eq", "gray_mean", "obj_id", "frame"])
+        df = pd.DataFrame(columns=["x", "y", "w", "h", "area", "solidity", "eq", "obj_id", "frame"])
     elif "R.mp4" in filepath:
-        df = pd.DataFrame(columns=["z", "y", "w", "h", "area", "solidity", "eq", "gray_mean", "obj_id", "frame"])
+        df = pd.DataFrame(columns=["z", "y", "w", "h", "area", "solidity", "eq", "obj_id", "frame"])
 
     while True:
         ret, org_frame = cap.read() # read in video in each frame
@@ -152,7 +152,7 @@ def tracking(filepath):
         for cnt in contours:
             # calculater area and remove small elements
             area = cv2.contourArea(cnt)
-            if area > 5:
+            if area > 10:
                 #cv2.drawContours(roi, [cnt], -1, (0, 255, 0), 2) # draw line on "roi" with "all" contours with "green line" with thickness 2
                 x, y, w, h = cv2.boundingRect(cnt)
                 cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0),  3)
@@ -164,19 +164,21 @@ def tracking(filepath):
         if len(detections) > 0:
             info = tracker.Update(detections)
             for i in range(len(info)):
-                x, y, w, h, area, solidity, eq, gray_mean, obj_id = info[i].coord, info[i].properties, info[i].track_id
+                x, y, w, h, obj_id = info[i].coord[0], info[i].coord[1],info[i].coord[2],info[i].coord[3], info[i].track_id
+                area, solidity, eq = info[i].properties[0], info[i].properties[1], info[i].properties[2]
+
 
                 cv2.putText(roi, str(obj_id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0), 2)
                 cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0),  3)
 
                 # append data to dataframe
-                df_row = [x, y, w, h, area, solidity, eq, gray_mean, obj_id, frame_number]
+                df_row = [x, y, w, h, area, solidity, eq, obj_id, frame_number]
                 df.loc[len(df)] = df_row
 
                 frame_number += 1
         
         else:
-            df.loc[len(df)] = [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, int(frame_number)]
+            df.loc[len(df)] = [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, int(frame_number)]
             frame_number += 1
 
         """
@@ -261,9 +263,9 @@ def img_preprocessing(filepath):
         # save video processed
         out.write(frame)
         
-        #key = cv2.waitKey(10) # no wait between frames
-        #if cv2.waitKey(1) & 0xFF == ord('q'): # press "q" to stop streaming
-        #    break
+        key = cv2.waitKey(10) # no wait between frames
+        if cv2.waitKey(1) & 0xFF == ord('q'): # press "q" to stop streaming
+            break
         
     cap.release()
     cv2.destroyAllWindows()

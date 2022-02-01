@@ -109,13 +109,13 @@ class Track:
         """
         prediction: predicted coordination by Kalman Filter
         ID: ID of detected Object
-        """
+        """  
 
         self.track_id = ID  # identification of each track object
         self.KF = KalmanFilter()  # KF instance to track this object
         cx = (detection[0]+detection[0]+detection[2]) // 2
         cy = (detection[1]+detection[1]+detection[3]) // 2
-        self.prediction = np.asarray(cx, cy)  # predicted centroids (x,y)
+        self.prediction = np.asarray(([cx], [cy]))  # predicted centroids (x,y)
         self.skipped_frames = 0  # number of frames skipped undetected
         self.trace = []  # trace path
         self.coord = detection[0], detection[1], detection[2], detection[3] # x, y, w, h
@@ -243,7 +243,7 @@ class Tracker:
         # Start new tracks
         if(len(un_assigned_detects) != 0):
             for i in range(len(un_assigned_detects)):
-                track = Track(centers[un_assigned_detects[i]],
+                track = Track(detections[un_assigned_detects[i]],
                               self.trackIdCount)
                 self.trackIdCount += 1
                 self.tracks.append(track)
@@ -268,4 +268,4 @@ class Tracker:
             self.tracks[i].trace.append(self.tracks[i].prediction)
             self.tracks[i].KF.lastResult = self.tracks[i].prediction
         
-        return tracks
+        return self.tracks
