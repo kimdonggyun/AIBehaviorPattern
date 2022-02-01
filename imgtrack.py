@@ -6,27 +6,6 @@ import numpy as np
 from tracker import Tracker
 
 
-###################################
-###################################
-
-def property(roi, cnt):
-    area = cv2.contourArea(cnt)
-    hull = cv2.convexHull(cnt)
-    hull_area = cv2.contourArea(hull)
-
-    solidity = float(area)/hull_area # calculate solidity
-    eq = np.sqrt(4*area/np.pi) # calculate equivaletn diameter
-
-
-    # calculate gray mean value within contour
-    mask_array = np.zeros(roi.shape,  np.uint8) # create 0 array having same shape of image
-    masked_img = np.ma.masked_array(roi, mask= (mask_array != 255)) # careful!! 1 is True, 0 is False. in this mask_array, background is False and object is True
-    gray_mean = np.mean(masked_img) # unmasked(False=background) will be ignored and masked(Ture=object) will only be considered
-
-
-    return area, solidity, eq, gray_mean
-
-
 class EuclideanDistTracker:
     def __init__(self):
         # Store the center positions of the objects
@@ -94,7 +73,6 @@ class EuclideanDistTracker:
             # New object is detected we assign the ID to that object
             if same_object_detected is False:
                 self.center_points[self.id_count] = (cx, cy, properties[0]) # x, y, area
-                kf = KalmanFilter()
                 self.kalman[self.id_count] = (cx, cy, properties[0], kf) # x, y, area, create own kalman filter
                 objects_bbs_ids.append([x, y, w, h, *properties, self.id_count])
 
@@ -184,22 +162,22 @@ def tracking(filepath):
 
         # 2. object tracking
         if len(detections) > 0:
-            T
-        boxes_ids = tracker.update(detections) 
-        if len(boxes_ids) == 0: # if there are no objects detected
-            df.loc[len(df)] = [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, int(frame_number)] #########
-            frame_number += 1
-        else: # if there are objects detected
-            for box_id in boxes_ids:
-                x, y, w, h, area, solidity, eq, gray_mean, obj_id= box_id
+            info = tracker.Update(detections)
+            for i in range(len(info)):
+                x, y, w, h, area, solidity, eq, gray_mean, obj_id = info[i].coord, info[i].properties, info[i].track_id
+
                 cv2.putText(roi, str(obj_id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0), 2)
                 cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0),  3)
 
                 # append data to dataframe
-                df_row = [*box_id, frame_number]
+                df_row = [x, y, w, h, area, solidity, eq, gray_mean, obj_id, frame_number]
                 df.loc[len(df)] = df_row
 
                 frame_number += 1
+        
+        else:
+            df.loc[len(df)] = [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, int(frame_number)]
+            frame_number += 1
 
         """
         # 2. object tracking
@@ -222,7 +200,7 @@ def tracking(filepath):
 
         
         # show windows
-        cv2.imshow("Frame", frame)
+        #cv2.imshow("Frame", frame)
         #cv2.imshow("Mask", mask)
         cv2.imshow("Fram_enhanced", roi)
 

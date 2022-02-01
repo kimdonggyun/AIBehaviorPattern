@@ -4,6 +4,7 @@ Email : dong-gyun.kim@awi.de
 Date created : Kalman filter and tracking algorithm
 """
 import numpy as np
+from imgproperty import property
 from scipy.optimize import linear_sum_assignment
 
 
@@ -99,12 +100,12 @@ class KalmanFilter:
         self.lastResult = self.u
         return self.u
 
-###################################
-class track:
+
+class Track:
     """
     create object variables for each detected object
     """
-    def __init__(self, prediction , ID ):
+    def __init__(self, detection , ID ):
         """
         prediction: predicted coordination by Kalman Filter
         ID: ID of detected Object
@@ -112,13 +113,17 @@ class track:
 
         self.track_id = ID  # identification of each track object
         self.KF = KalmanFilter()  # KF instance to track this object
-        self.prediction = np.asarray(prediction)  # predicted centroids (x,y)
+        cx = (detection[0]+detection[0]+detection[2]) // 2
+        cy = (detection[1]+detection[1]+detection[3]) // 2
+        self.prediction = np.asarray(cx, cy)  # predicted centroids (x,y)
         self.skipped_frames = 0  # number of frames skipped undetected
         self.trace = []  # trace path
+        self.coord = detection[0], detection[1], detection[2], detection[3] # x, y, w, h
+        self.properties = property(detection[4], detection[5])
 
 
 
-class Tracker(object):
+class Tracker:
     """Tracker class that updates track vectors of object tracked
     Attributes:
         None
@@ -166,15 +171,14 @@ class Tracker(object):
         for i in range(len(detections)):
             cx = (detections[i][0]+detections[i][0]+detections[i][2]) // 2
             cy = (detections[i][1]+detections[i][1]+detections[i][3]) // 2
-            o = np.array([cx], [cy])
+            o = np.array([[cx], [cy]])
             centers.append(np.round(o))
-
 
 
         # Create tracks if no tracks vector found
         if (len(self.tracks) == 0):
             for i in range(len(centers)):
-                track = track(centers[i], self.trackIdCount)
+                track = Track(detections[i], self.trackIdCount)
                 self.trackIdCount += 1
                 self.tracks.append(track)
 
@@ -263,3 +267,5 @@ class Tracker(object):
 
             self.tracks[i].trace.append(self.tracks[i].prediction)
             self.tracks[i].KF.lastResult = self.tracks[i].prediction
+        
+        return tracks
