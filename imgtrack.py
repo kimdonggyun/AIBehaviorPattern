@@ -3,120 +3,7 @@ import cv2
 import math
 import pandas as pd
 import numpy as np
-
-
-###################################
-###################################
-
-def property(roi, cnt):
-    area = cv2.contourArea(cnt)
-    hull = cv2.convexHull(cnt)
-    hull_area = cv2.contourArea(hull)
-
-    solidity = float(area)/hull_area # calculate solidity
-    eq = np.sqrt(4*area/np.pi) # calculate equivaletn diameter
-
-
-    # calculate gray mean value within contour
-    mask_array = np.zeros(roi.shape,  np.uint8) # create 0 array having same shape of image
-    masked_img = np.ma.masked_array(roi, mask= (mask_array != 255)) # careful!! 1 is True, 0 is False. in this mask_array, background is False and object is True
-    gray_mean = np.mean(masked_img) # unmasked(False=background) will be ignored and masked(Ture=object) will only be considered
-
-
-    return area, solidity, eq, gray_mean
-
-
-
-class KalmanFilter(object):
-    """Kalman Filter class keeps track of the estimated state of
-    the system and the variance or uncertainty of the estimate.
-    Predict and Correct methods implement the functionality
-    Reference: https://en.wikipedia.org/wiki/Kalman_filter
-    Attributes: None
-    """
-
-    def __init__(self):
-        """Initialize variable used by Kalman Filter class
-        Args:
-            None
-        Return:
-            None
-        """
-        self.dt = 0.005  # delta time
-
-        self.A = np.array([[1, 0], [0, 1]])  # matrix in observation equations
-        self.u = np.zeros((2, 1))  # previous state vector
-
-        # (x,y) tracking object center
-        self.b = np.array([[0], [255]])  # vector of observations
-
-        self.P = np.diag((3.0, 3.0))  # covariance matrix
-        self.F = np.array([[1.0, self.dt], [0.0, 1.0]])  # state transition mat
-
-        self.Q = np.eye(self.u.shape[0])  # process noise matrix
-        self.R = np.eye(self.b.shape[0])  # observation noise matrix
-        self.lastResult = np.array([[0], [255]])
-
-    def predict(self):
-        """Predict state vector u and variance of uncertainty P (covariance).
-            where,
-            u: previous state vector
-            P: previous covariance matrix
-            F: state transition matrix
-            Q: process noise matrix
-        Equations:
-            u'_{k|k-1} = Fu'_{k-1|k-1}
-            P_{k|k-1} = FP_{k-1|k-1} F.T + Q
-            where,
-                F.T is F transpose
-        Args:
-            None
-        Return:
-            vector of predicted state estimate
-        """
-        # Predicted state estimate
-        self.u = np.round(np.dot(self.F, self.u))
-        # Predicted estimate covariance
-        self.P = np.dot(self.F, np.dot(self.P, self.F.T)) + self.Q
-        self.lastResult = self.u  # same last predicted result
-        return self.u
-
-    def correct(self, b, flag):
-        """Correct or update state vector u and variance of uncertainty P (covariance).
-        where,
-        u: predicted state vector u
-        A: matrix in observation equations
-        b: vector of observations
-        P: predicted covariance matrix
-        Q: process noise matrix
-        R: observation noise matrix
-        Equations:
-            C = AP_{k|k-1} A.T + R
-            K_{k} = P_{k|k-1} A.T(C.Inv)
-            u'_{k|k} = u'_{k|k-1} + K_{k}(b_{k} - Au'_{k|k-1})
-            P_{k|k} = P_{k|k-1} - K_{k}(CK.T)
-            where,
-                A.T is A transpose
-                C.Inv is C inverse
-        Args:
-            b: vector of observations
-            flag: if "true" prediction result will be updated else detection
-        Return:
-            predicted state vector u
-        """
-
-        if not flag:  # update using prediction
-            self.b = self.lastResult
-        else:  # update using detection
-            self.b = b
-        C = np.dot(self.A, np.dot(self.P, self.A.T)) + self.R
-        K = np.dot(self.P, np.dot(self.A.T, np.linalg.inv(C)))
-
-        self.u = np.round(self.u + np.dot(K, (self.b - np.dot(self.A,
-                                                              self.u))))
-        self.P = self.P - np.dot(K, np.dot(C, K.T))
-        self.lastResult = self.u
-        return self.u
+from tracker import Tracker
 
 
 class EuclideanDistTracker:
@@ -186,7 +73,6 @@ class EuclideanDistTracker:
             # New object is detected we assign the ID to that object
             if same_object_detected is False:
                 self.center_points[self.id_count] = (cx, cy, properties[0]) # x, y, area
-                kf = KalmanFilter()
                 self.kalman[self.id_count] = (cx, cy, properties[0], kf) # x, y, area, create own kalman filter
                 objects_bbs_ids.append([x, y, w, h, *properties, self.id_count])
 
@@ -205,10 +91,13 @@ class EuclideanDistTracker:
         self.center_points = new_center_points.copy()
         return objects_bbs_ids # return x, y, w, h, area, solidity, eq, gray_mean, id
 
-###################################
+
+
+
 def tracking(filepath):
     # define tracker 
-    tracker = EuclideanDistTracker()
+    #tracker = EuclideanDistTracker()
+    tracker = Tracker(50, 5, 3, 100)
 
     # reading in video file
     filepath = filepath
@@ -227,9 +116,6 @@ def tracking(filepath):
     new_filename = filepath.replace(".mp4", "_processed_kf.mp4")
     out = cv2.VideoWriter(new_filename, fps = 20.0, fourcc = fourcc, frameSize= (fheight, fwidth))
 
-    # load Kalman filter
-    kf = KalmanFilter()
-
     # loooing through the frames
     frame_number = 0
     if "L.mp4" in filepath:
@@ -238,9 +124,9 @@ def tracking(filepath):
         df = pd.DataFrame(columns=["z", "y", "w", "h", "area", "solidity", "eq", "gray_mean", "obj_id", "frame"])
 
     while True:
-        ret, org_frame = cap.read()
+        ret, org_frame = cap.read() # read in video in each frame
 
-        if ret == False:
+        if ret == False: # if video footage ends, save the result
             df_filepath = filepath.replace(".mp4", "_kf.txt")
             df.to_csv(df_filepath, sep= "\t") # save data as txt file
             print("file saved at %s" %(df_filepath ,))
@@ -273,7 +159,27 @@ def tracking(filepath):
 
                 detections.append([x, y, w, h, roi, cnt])
         
+
+        # 2. object tracking
+        if len(detections) > 0:
+            info = tracker.Update(detections)
+            for i in range(len(info)):
+                x, y, w, h, area, solidity, eq, gray_mean, obj_id = info[i].coord, info[i].properties, info[i].track_id
+
+                cv2.putText(roi, str(obj_id), (x, y - 15), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0), 2)
+                cv2.rectangle(roi, (x, y), (x + w, y + h), (0, 255, 0),  3)
+
+                # append data to dataframe
+                df_row = [x, y, w, h, area, solidity, eq, gray_mean, obj_id, frame_number]
+                df.loc[len(df)] = df_row
+
+                frame_number += 1
         
+        else:
+            df.loc[len(df)] = [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, int(frame_number)]
+            frame_number += 1
+
+        """
         # 2. object tracking
         boxes_ids = tracker.update(detections) 
         if len(boxes_ids) == 0: # if there are no objects detected
@@ -290,11 +196,11 @@ def tracking(filepath):
                 df.loc[len(df)] = df_row
 
                 frame_number += 1
-
+        """
 
         
         # show windows
-        cv2.imshow("Frame", frame)
+        #cv2.imshow("Frame", frame)
         #cv2.imshow("Mask", mask)
         cv2.imshow("Fram_enhanced", roi)
 
